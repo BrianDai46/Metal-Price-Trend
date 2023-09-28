@@ -1,5 +1,5 @@
 from __future__ import annotations
-from etl.api_etl.etl import ETL
+from api_etl.etl import ETL
 import exchange_calendars as tc
 import datetime
 from datetime import date, timedelta
@@ -164,7 +164,23 @@ class Yahoo(ETL):
             self.df.to_csv(f'../data/{self.ticker_list[0]}_stock.csv', index=False)
             print(f"{self.ticker_list[0]}_stock.csv created!")
 
+    def export_as_ts_ref(self):
+        exclude_columns = ['date', 'tic']
+        self.df.loc[:, ~self.df.columns.isin(exclude_columns)] = self.df.loc[:, ~self.df.columns.isin(exclude_columns)].round(3)
+        # exclude open, high, low, volumn and day
+        self.df = self.df[['date', 'close', 'tic', 'TLT', 'IEF', 'SHY']]
+        ticker_list = self.df['tic'].unique()
+        yfinance_ts = self.df[self.df['tic'] == ticker_list[0]][['date', 'close', 'TLT', 'IEF', 'SHY']].rename(columns={'close': ticker_list[0]})
+        for tic in ticker_list[1:]:
+            yfinance_ts = pd.merge(yfinance_ts, self.df[self.df['tic'] == tic][['date', 'close']].rename(columns={'close': tic}), on='date', how='outer')
+        yfinance_ts.rename(columns={'date': 'Date'}, inplace = True)
+        for col in yfinance_ts.columns:
+            if col != 'Date':
+                yfinance_ts.rename(columns={col: 'yfinance_' + col}, inplace=True)
+        yfinance_ts.to_csv('yfinance_stock_time_series.csv', index=False)
 
+
+# the following is YahooFinance package reference
 '''
 class YahooFinance:
     """Provides methods for retrieving daily stock data from

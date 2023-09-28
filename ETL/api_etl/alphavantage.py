@@ -1,6 +1,6 @@
 import requests
 import csv
-from etl.api_etl.etl import ETL
+from api_etl.etl import ETL
 
 class Alphavantage(ETL):
     def __init__(self, *args, **kwargs):
